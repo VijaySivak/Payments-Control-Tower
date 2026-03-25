@@ -24,7 +24,6 @@ from ..schemas.ai_schemas import (
     Recommendation,
     RepairAction,
 )
-from .llm_client import generate_json, llm_enabled
 
 
 def _ts() -> str:
@@ -306,55 +305,18 @@ class SummaryAgent:
             "HIGH" if rca.resolution_priority in ("CRITICAL", "HIGH") else "MEDIUM"
         )
 
-        _deterministic_summary = (
+        what_went_wrong = rca.primary_issue
+        why_it_happened = rca.likely_root_cause[:200] + ("..." if len(rca.likely_root_cause) > 200 else "")
+        what_to_do = top_rec.title if top_rec else "Manual review by operations team recommended."
+
+        operator_summary = (
             f"Payment {payment.payment_reference} ({payment.corridor}, "
             f"{payment.amount:,.0f} {payment.source_currency}) is experiencing a "
             f"{rca.issue_category.lower()} exception at the {rca.impacted_stage} stage. "
             f"{rca.primary_issue} Confidence: {rca.confidence_score * 100:.0f}%. "
             f"{'SLA breached. ' if payment.sla_breach else ''}"
-            f"Recommended action: {top_rec.title if top_rec else 'Manual review by operations team recommended.'}"
+            f"Recommended action: {what_to_do}"
         )
-        _deterministic_what_went_wrong = rca.primary_issue
-        _deterministic_why = rca.likely_root_cause[:200] + ("..." if len(rca.likely_root_cause) > 200 else "")
-        _deterministic_what_to_do = top_rec.title if top_rec else "Manual review by operations team recommended."
-
-        llm_result = generate_json(
-            system_prompt=(
-                "You are an AI operations analyst for a cross-border payments platform. "
-                "Generate concise, professional operator analysis for a payment exception. "
-                "Return a JSON object with exactly these keys: "
-                "operator_summary (2-3 sentences), what_went_wrong (1 sentence), "
-                "why_it_happened (2-3 sentences with specific context), what_to_do (1 clear action sentence)."
-            ),
-            user_prompt=(
-                f"Payment Reference: {payment.payment_reference}\n"
-                f"Corridor: {payment.corridor}\n"
-                f"Amount: {payment.amount:,.0f} {payment.source_currency}\n"
-                f"Current Stage: {rca.impacted_stage}\n"
-                f"Issue Category: {rca.issue_category}\n"
-                f"Primary Issue: {rca.primary_issue}\n"
-                f"Root Cause: {rca.likely_root_cause}\n"
-                f"Contributing Factors: {', '.join(rca.contributing_factors[:3])}\n"
-                f"Confidence: {rca.confidence_score * 100:.0f}%\n"
-                f"Resolution Priority: {rca.resolution_priority}\n"
-                f"SLA Breached: {payment.sla_breach}\n"
-                f"Bottleneck Stage: {payment.bottleneck_stage or 'N/A'}\n"
-                f"Delay Node: {payment.delay_node or 'N/A'}\n"
-                f"Delay Country: {payment.delay_country or 'N/A'}\n"
-                f"Top Recommended Action: {top_rec.title if top_rec else 'Manual review'}\n"
-            ),
-            fallback={
-                "operator_summary": _deterministic_summary,
-                "what_went_wrong": _deterministic_what_went_wrong,
-                "why_it_happened": _deterministic_why,
-                "what_to_do": _deterministic_what_to_do,
-            },
-        )
-
-        operator_summary = llm_result.get("operator_summary", _deterministic_summary)
-        what_went_wrong = llm_result.get("what_went_wrong", _deterministic_what_went_wrong)
-        why_it_happened = llm_result.get("why_it_happened", _deterministic_why)
-        what_to_do = llm_result.get("what_to_do", _deterministic_what_to_do)
 
         key_facts = [
             f"Payment: {payment.payment_reference}",

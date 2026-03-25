@@ -81,9 +81,6 @@ export function AgentTracePanel({ trace }: Props) {
           <div className="flex items-center gap-2">
             <Cpu className="w-4 h-4 text-violet-400" />
             <span className="text-sm font-semibold text-white">Agent Execution Trace</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-900/30 text-violet-300 border border-violet-500/25">
-              {trace.mode}
-            </span>
           </div>
           <p className="text-[10px] text-slate-500 mt-0.5">
             {successCount}/{trace.agents_run.length} agents succeeded · {trace.total_duration_ms}ms total

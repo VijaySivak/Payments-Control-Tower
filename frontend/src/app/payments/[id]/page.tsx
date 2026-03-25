@@ -62,12 +62,13 @@ export default function PaymentDetailPage() {
             <h1 className="text-xl font-bold text-white font-mono">{payment.payment_reference}</h1>
             <StageBadge stage={payment.current_stage} />
             <StatusBadge status={payment.current_status} />
-            <PriorityBadge priority={payment.priority} />
-            {payment.anomaly_flag && payment.anomaly_type && (
-              <AnomalyTypeBadge type={payment.anomaly_type} />
-            )}
-            {payment.anomaly_severity && (
-              <SeverityBadge severity={payment.anomaly_severity} />
+            {payment.anomaly_flag && payment.anomaly_type ? (
+              <>
+                <AnomalyTypeBadge type={payment.anomaly_type} />
+                {payment.anomaly_severity && <SeverityBadge severity={payment.anomaly_severity} />}
+              </>
+            ) : (
+              <PriorityBadge priority={payment.priority} />
             )}
             {payment.sla_breach && (
               <SLABadge breach={true} breachSeconds={payment.sla_breach_seconds} recovered={payment.recovered} />
@@ -530,7 +531,7 @@ export default function PaymentDetailPage() {
           <Panel noPad>
             <PanelHeader>
               <SectionHeader title="Agent Analysis Trace" icon={Cpu}
-                subtitle={`${aiPackage.agent_trace.agents_run.length} agents · ${aiPackage.agent_trace.total_duration_ms}ms · ${aiPackage.agent_trace.mode}`} />
+                subtitle={`${aiPackage.agent_trace.agents_run.length} agents · ${aiPackage.agent_trace.total_duration_ms}ms`} />
             </PanelHeader>
             <div className="px-5 pb-5">
               <AgentTracePanel trace={aiPackage.agent_trace} />

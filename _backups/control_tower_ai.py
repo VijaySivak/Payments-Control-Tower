@@ -8,7 +8,6 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from .llm_client import generate_json
 from ..schemas.ai_schemas import (
     CorridorRiskInsight,
     NodeRiskWatchlistItem,
@@ -313,13 +312,13 @@ class ControlTowerAI:
         # Determine system status
         if critical_anomalies > 3 or sla_breaches > 10:
             system_status = "DEGRADED"
-            _det_headline = f"System under stress — {critical_anomalies} critical anomalies and {sla_breaches} SLA breaches require immediate attention."
+            headline = f"System under stress — {critical_anomalies} critical anomalies and {sla_breaches} SLA breaches require immediate attention."
         elif sla_breaches > 5 or high_anomalies > 5:
             system_status = "ELEVATED"
-            _det_headline = f"Elevated exception rate — {open_anomalies} open anomalies with {sla_breaches} SLA breaches. Operations review recommended."
+            headline = f"Elevated exception rate — {open_anomalies} open anomalies with {sla_breaches} SLA breaches. Operations review recommended."
         else:
             system_status = "NORMAL"
-            _det_headline = f"System operating within normal parameters. {success_rate:.0f}% success rate across {total} payments."
+            headline = f"System operating within normal parameters. {success_rate:.0f}% success rate across {total} payments."
 
         # Top issues
         type_counts: dict[str, int] = {}
@@ -344,59 +343,21 @@ class ControlTowerAI:
         if failed > 0:
             key_alerts.append(f"{failed} payments in FAILED state")
 
-        _det_recommended_actions = []
+        recommended_actions = []
         if critical_anomalies > 0:
-            _det_recommended_actions.append("Review critical anomalies and assign compliance/ops owners")
+            recommended_actions.append("Review critical anomalies and assign compliance/ops owners")
         if sla_breaches > 5:
-            _det_recommended_actions.append("Run corridor SLA health check — multiple SLA breaches detected")
+            recommended_actions.append("Run corridor SLA health check — multiple SLA breaches detected")
         if failed > 2:
-            _det_recommended_actions.append("Investigate failed payments for retry eligibility")
-        if not _det_recommended_actions:
-            _det_recommended_actions.append("Continue monitoring — no immediate action required")
+            recommended_actions.append("Investigate failed payments for retry eligibility")
+        if not recommended_actions:
+            recommended_actions.append("Continue monitoring — no immediate action required")
 
-        _det_positive_signals = []
+        positive_signals = []
         if success_rate > 70:
-            _det_positive_signals.append(f"{success_rate:.0f}% payment success rate")
+            positive_signals.append(f"{success_rate:.0f}% payment success rate")
         if completed > 50:
-            _det_positive_signals.append(f"{completed} payments completed successfully")
-
-        top_types_str = ", ".join(f"{t.replace('_', ' ')}: {c}" for t, c in top_types)
-        llm_result = generate_json(
-            system_prompt=(
-                "You are an AI operations director for a cross-border payments platform. "
-                "Generate a concise, professional system-wide operational brief for the operations team. "
-                "Return a JSON object with exactly these keys: "
-                "headline (1-2 sentences capturing overall system health), "
-                "recommended_actions (list of 3-5 specific, actionable strings), "
-                "positive_signals (list of 1-3 short strings noting what is working well)."
-            ),
-            user_prompt=(
-                f"System Status: {system_status}\n"
-                f"Total Payments: {total}\n"
-                f"Completed: {completed} ({success_rate:.0f}% success rate)\n"
-                f"Active / In Progress: {active}\n"
-                f"Failed: {failed}\n"
-                f"SLA Breaches: {sla_breaches}\n"
-                f"Critical Anomalies: {critical_anomalies}\n"
-                f"High Severity Anomalies: {high_anomalies}\n"
-                f"Open Anomalies: {open_anomalies}\n"
-                f"Top Issue Types: {top_types_str}\n"
-            ),
-            fallback={
-                "headline": _det_headline,
-                "recommended_actions": _det_recommended_actions,
-                "positive_signals": _det_positive_signals,
-            },
-        )
-
-        headline = llm_result.get("headline", _det_headline)
-        recommended_actions = llm_result.get("recommended_actions", _det_recommended_actions)
-        if not isinstance(recommended_actions, list):
-            recommended_actions = _det_recommended_actions
-
-        positive_signals = llm_result.get("positive_signals", _det_positive_signals)
-        if not isinstance(positive_signals, list):
-            positive_signals = _det_positive_signals
+            positive_signals.append(f"{completed} payments completed successfully")
 
         watch_items = []
         # Get top corridors at risk
