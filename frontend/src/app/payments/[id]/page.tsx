@@ -161,7 +161,7 @@ export default function PaymentDetailPage() {
                   <span className="text-xs text-slate-400">{label}</span>
                   <span className={clsx(
                     "text-xs font-medium px-2 py-0.5 rounded border",
-                    active ? SEVERITY_BG[severity as any] : "text-slate-500 border-slate-700"
+                    active ? SEVERITY_BG[severity as import("@/lib/types").AnomalySeverity] : "text-slate-500 border-slate-700"
                   )}>
                     {active ? "ACTIVE" : "Clear"}
                   </span>

@@ -58,8 +58,10 @@ export default function AnomaliesPage() {
     : [];
 
   const openCount = anomalies?.filter((a) => a.status === "OPEN").length ?? 0;
+  const investigatingCount = anomalies?.filter((a) => a.status === "INVESTIGATING").length ?? 0;
   const criticalCount = anomalies?.filter((a) => a.severity === "CRITICAL").length ?? 0;
   const escalatedCount = anomalies?.filter((a) => a.operational_impact_score != null && a.operational_impact_score >= 7).length ?? 0;
+  const recurringCount = anomalies?.filter((a) => a.recurrence_count > 0).length ?? 0;
 
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
@@ -112,11 +114,13 @@ export default function AnomaliesPage() {
       )}
 
       {/* KPI row */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <MetricCard label="Total Anomalies" value={anomalies?.length ?? "—"} icon={AlertTriangle} variant="critical" />
         <MetricCard label="Critical" value={criticalCount} icon={Zap} variant="critical" />
         <MetricCard label="Open" value={openCount} icon={Shield} variant="warning" />
+        <MetricCard label="Investigating" value={investigatingCount} icon={Shield} variant="warning" />
         <MetricCard label="High Impact" value={escalatedCount} icon={TrendingUp} variant={escalatedCount > 0 ? "critical" : "default"} />
+        <MetricCard label="Recurring" value={recurringCount} icon={AlertTriangle} variant={recurringCount > 2 ? "warning" : "default"} />
       </div>
 
       {/* Charts + Filters */}

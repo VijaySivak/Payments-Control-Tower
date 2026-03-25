@@ -90,7 +90,7 @@ export default function DashboardPage() {
 
       {/* KPI Row */}
       {overview && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           <MetricCard
             label="Total Payments"
             value={overview.total_payments.toLocaleString()}
@@ -98,11 +98,32 @@ export default function DashboardPage() {
             onClick={() => router.push("/payments")}
           />
           <MetricCard
+            label="In Progress"
+            value={overview.in_progress}
+            icon={Clock}
+            variant="default"
+            onClick={() => router.push("/payments?status=IN_PROGRESS")}
+          />
+          <MetricCard
+            label="Completed"
+            value={overview.completed}
+            icon={CheckCircle2}
+            variant="success"
+            onClick={() => router.push("/payments?status=COMPLETED")}
+          />
+          <MetricCard
             label="Failed"
             value={overview.failed}
             icon={XCircle}
             variant="critical"
             onClick={() => router.push("/payments?status=FAILED")}
+          />
+          <MetricCard
+            label="On Hold"
+            value={overview.on_hold}
+            icon={AlertTriangle}
+            variant="warning"
+            onClick={() => router.push("/payments?status=ON_HOLD")}
           />
           <MetricCard
             label="Anomalies"
@@ -263,8 +284,11 @@ export default function DashboardPage() {
                 {/* Key metrics */}
                 <div className="pt-1 border-t border-white/10 space-y-1.5">
                   {[
+                    { label: "Success Rate", value: `${health.success_rate}%`, color: "text-emerald-400" },
+                    { label: "Anomaly Rate", value: `${health.anomaly_rate}%`, color: "text-amber-400" },
                     { label: "SLA Breach Rate", value: `${health.sla_breach_rate}%`, color: health.sla_breach_rate > 5 ? "text-red-400" : "text-slate-300" },
                     { label: "Queue Depth", value: health.queue_depth, color: "text-white" },
+                    { label: "Throughput/hr", value: health.throughput_per_hour.toFixed(1), color: "text-white" },
                   ].map(({ label, value, color }) => (
                     <div key={label} className="flex items-center justify-between">
                       <span className="text-[10px] text-slate-400">{label}</span>
@@ -468,21 +492,37 @@ export default function DashboardPage() {
 
       {/* Delayed countries */}
       {overview && overview.top_delayed_countries.length > 0 && (
-        <Panel>
-          <SectionHeader title="Top Delayed Countries" icon={Clock} className="mb-3" />
-          <div className="flex flex-wrap gap-2">
-            {overview.top_delayed_countries.map(({ country, count }) => (
-              <div
-                key={country}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/4 border border-white/8 cursor-pointer hover:bg-white/8 transition"
-                onClick={() => router.push(`/payments?destination_country=${country}`)}
-              >
-                <span className="text-sm font-medium text-slate-300">{country}</span>
-                <span className="text-xs font-semibold text-amber-400">{count} delayed</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Panel>
+            <SectionHeader title="Top Delayed Countries" icon={Clock} className="mb-4" />
+            <div className="space-y-2">
+              {overview.top_delayed_countries.map(({ country, count }) => (
+                <div
+                  key={country}
+                  className="flex items-center justify-between py-1.5 cursor-pointer hover:bg-white/5 rounded px-2 -mx-2 transition"
+                  onClick={() => router.push(`/payments?destination_country=${country}`)}
+                >
+                  <span className="text-sm text-slate-300">{country}</span>
+                  <span className="text-xs font-semibold text-amber-400">{count} delayed</span>
+                </div>
+              ))}
+            </div>
+          </Panel>
+          <Panel>
+            <SectionHeader title="Avg Processing Time" icon={TrendingUp} className="mb-4" />
+            <div className="flex items-center gap-4">
+              <div className="text-4xl font-bold text-white tabular-nums">
+                {overview.average_processing_time_seconds < 3600
+                  ? `${(overview.average_processing_time_seconds / 60).toFixed(0)}m`
+                  : `${(overview.average_processing_time_seconds / 3600).toFixed(1)}h`}
               </div>
-            ))}
-          </div>
-        </Panel>
+              <div>
+                <p className="text-xs text-slate-400">Average end-to-end processing time</p>
+                <p className="text-xs text-slate-500 mt-1">Based on completed payments</p>
+              </div>
+            </div>
+          </Panel>
+        </div>
       )}
     </div>
   );
